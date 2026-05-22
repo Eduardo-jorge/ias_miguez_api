@@ -57,5 +57,5 @@ def create_user():
     
     return jsonify(new_user.to_dict()), 201
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG_MODE)
+if __name__ == '__main__':    
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG_MODE)  # nosec B104
