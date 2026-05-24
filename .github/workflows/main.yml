@@ -3,9 +3,12 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main      # Para Producción
-      - qa        # Para QA
-      - develop   # Para Desarrollo
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
 
 jobs:
   test:
