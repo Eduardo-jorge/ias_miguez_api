@@ -56,6 +56,7 @@ def create_user():
     db.session.commit()
     
     return jsonify(new_user.to_dict()), 201
+
 # ==========================================
 # COMPLETANDO EL ABM DE USUARIOS (Requisito del TP)
 # ==========================================
