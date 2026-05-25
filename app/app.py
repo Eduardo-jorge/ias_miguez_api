@@ -33,6 +33,7 @@ with app.app_context():
 # Endpoint 1: Healthcheck (Requisito del TP)
 @app.route('/healthcheck', methods=['GET'])
 def healthcheck():
+    @app.route('/healthcheck', methods=['GET'])
     # return jsonify({"status": "ok", "message": "API funcionando correctamente"}), 200
     return jsonify({"status": "ok", "message": "API funcionando correctamente - Prueba CI/CD"}), 200
 
