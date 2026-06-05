@@ -3,9 +3,8 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main      # Para Producción
-      - qa        # Para QA
-      - develop   # Para Desarrollo
+      - main      # Dispara QA y luego pide permiso para PRD
+      - develop   # Dispara DEV automáticamente
 
 jobs:
   test:
@@ -25,6 +24,10 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Analizar seguridad con Bandit
+        run: |
+          bandit -r ./ -ll -ii
+
       - name: Ejecutar pruebas unitarias
         env:
           PYTHONPATH: .
@@ -43,17 +46,18 @@ jobs:
   deploy-qa:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/qa' # Solo corre en la rama qa
+    if: github.ref == 'refs/heads/main' # Según el TP, QA sale de main
     steps:
       - name: Disparar deploy en Render (Entorno QA)
         run: |
           curl "${{ secrets.RENDER_DEPLOY_HOOK_QA }}"
 
   deploy-prod:
-    needs: test
+    needs: [test, deploy-qa] # Espera a que QA esté listo antes de pedir aprobación
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Solo corre en la rama main
+    environment: production # ESTO FRENA EL DEPLOY Y TE PIDE APROBACIÓN
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Disparar deploy en Render (Entorno Prod)
         run: |
-          curl "${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
+          curl "${{ secrets.RENDER_DEPLOY_HOOK_PRD }}"
