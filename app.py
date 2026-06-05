@@ -56,6 +56,39 @@ def create_user():
     db.session.commit()
     
     return jsonify(new_user.to_dict()), 201
+    
+# Endpoint 4: Modificar un usuario existente
+@app.route('/users/<int:id>', methods=['PUT'])
+def update_user(id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    data = request.get_json()
+    
+    if 'nombre' in data:
+        user.nombre = data['nombre']
+        
+    if 'email' in data:
+        # Verifica que el email nuevo no sea de otro usuario
+        existing_user = User.query.filter_by(email=data['email']).first()
+        if existing_user and existing_user.id != id:
+            return jsonify({"error": "El email ya está registrado"}), 400
+        user.email = data['email']
+
+    db.session.commit()
+    return jsonify(user.to_dict()), 200
+    
+# Endpoint 5: Eliminar un usuario
+@app.route('/users/<int:id>', methods=['DELETE'])
+def delete_user(id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": "Usuario eliminado correctamente"}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG_MODE)
