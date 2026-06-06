@@ -5,6 +5,10 @@ on:
     branches:
       - main      # Dispara QA y luego pide permiso para PRD
       - develop   # Dispara DEV automáticamente
+  pull_request:
+    branches:
+      - main      # Dispara CI al hacer PR hacia main
+      - develop   # Dispara CI al hacer PR hacia develop
 
 jobs:
   test:
@@ -24,20 +28,23 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: Analizar seguridad con Bandit
+      - name: Analizar seguridad con Bandit (Solo en PR a main)
+        # Se asegura de correr SOLO si es un Pull Request apuntando a main
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: |
           bandit -r ./ -ll -ii
 
-      - name: Ejecutar pruebas unitarias
+      - name: Ejecutar pruebas unitarias y de integración
         env:
           PYTHONPATH: .
         run: |
           pytest tests/unit/
+          pytest tests/integration/
 
   deploy-dev:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' # Solo corre en la rama develop
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' # Solo corre en merge/push a develop
     steps:
       - name: Disparar deploy en Render (Entorno Dev)
         run: |
@@ -46,7 +53,7 @@ jobs:
   deploy-qa:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Según el TP, QA sale de main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Solo corre en merge/push a main
     steps:
       - name: Disparar deploy en Render (Entorno QA)
         run: |
@@ -55,8 +62,8 @@ jobs:
   deploy-prod:
     needs: [test, deploy-qa] # Espera a que QA esté listo antes de pedir aprobación
     runs-on: ubuntu-latest
-    environment: production # ESTO FRENA EL DEPLOY Y TE PIDE APROBACIÓN
-    if: github.ref == 'refs/heads/main'
+    environment: production # ESTO FRENA EL DEPLOY Y TE PIDE APROBACIÓN MANUAL
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Disparar deploy en Render (Entorno Prod)
         run: |
