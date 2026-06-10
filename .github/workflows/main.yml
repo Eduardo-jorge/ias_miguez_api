@@ -3,12 +3,12 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main      # Dispara QA y luego pide permiso para PRD
-      - develop   # Dispara DEV automáticamente
+      - main      # Dispara qa y luego pide permiso para prd
+      - develop   # Dispara dev automáticamente
   pull_request:
     branches:
-      - main      # Dispara CI al hacer PR hacia main
-      - develop   # Dispara CI al hacer PR hacia develop
+      - main      # Dispara ci al hacer pr hacia main
+      - develop   # Dispara ci al hacer pr hacia develop
 
 jobs:
   test:
@@ -28,8 +28,8 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: Analizar seguridad con Bandit (Solo en PR a main)
-        # Se asegura de correr SOLO si es un Pull Request apuntando a main
+      - name: analizar seguridad con Bandit (Solo en pr a main)
+        # Se asegura de correr  si es un Pull Request apuntando a main
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: |
           bandit -r ./ -ll -ii
@@ -44,7 +44,7 @@ jobs:
   deploy-dev:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' # Solo corre en merge/push a develop
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' # solo corre en merge/push a develop
     steps:
       - name: Disparar deploy en Render (Entorno Dev)
         run: |
