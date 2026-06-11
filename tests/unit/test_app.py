@@ -21,7 +21,7 @@ def test_healthcheck(client):
     response = client.get('/healthcheck')
     assert response.status_code == 200
     #assert response.get_json() == {"status": "ok", "message": "API funcionando correctamente"}
-    assert response.get_json() == {"status": "ok", "message": "API funcionando correctamente - Prueba CI/CD"}
+    assert response.get_json() == {"status": "ok", "message": "API funcionando correctamente - Prueba CI/CD 11/06"}
 def test_create_and_get_user(client):
     """Prueba la creación de un usuario y que se liste correctamente"""
     # 1. Crear usuario
