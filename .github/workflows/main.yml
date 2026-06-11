@@ -55,6 +55,7 @@ jobs:
   deploy-dev:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' # solo corre en merge/push a develop
     steps:
       - name: Disparar deploy en Render DEV
         run: curl "${{ secrets.RENDER_DEPLOY_HOOK_DEV }}"
