@@ -1,17 +1,21 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline IAS
 
 on:
   push:
     branches:
-      - main      # Dispara qa y luego pide permiso para prd
-      - develop   # Dispara dev automáticamente
+      - develop
+      - main
   pull_request:
     branches:
-      - main      # Dispara ci al hacer pr hacia main
-      - develop   # Dispara ci al hacer pr hacia develop
+      - develop
+      - main
 
 jobs:
-  test:
+  # ==========================================
+  # CI: INTEGRACIÓN CONTINUA (Solo en Pull Requests)
+  # ==========================================
+  ci-tests:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout del código
@@ -25,46 +29,51 @@ jobs:
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: analizar seguridad con Bandit (Solo en pr a main)
-        # Se asegura de correr  si es un Pull Request apuntando a main
-        if: github.event_name == 'pull_request' && github.base_ref == 'main'
-        run: |
-          bandit -r ./ -ll -ii
-
-      - name: Ejecutar pruebas unitarias y de integración
+      - name: Ejecutar pruebas unitarias e integración
         env:
           PYTHONPATH: .
         run: |
           pytest tests/unit/
           pytest tests/integration/
 
+      - name: Análisis de código con Bandit
+        run: bandit -r app/
+
+      - name: Ejecutar Tests de Seguridad (Solo PR de develop hacia main)
+        if: github.base_ref == 'main'
+        env:
+          PYTHONPATH: .
+        run: pytest tests/security/
+
+  # ==========================================
+  # CD: DESPLIEGUE CONTINUO (Solo al hacer merge/push)
+  # ==========================================
+  
+  # Deploy automático a DEV cuando llega código a develop
   deploy-dev:
-    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' # solo corre en merge/push a develop
     steps:
-      - name: Disparar deploy en Render (Entorno Dev)
-        run: |
-          curl "${{ secrets.RENDER_DEPLOY_HOOK_DEV }}"
+      - name: Disparar deploy en Render DEV
+        run: curl "${{ secrets.RENDER_DEPLOY_HOOK_DEV }}"
 
+  # Deploy automático a QA cuando llega código a main
   deploy-qa:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Solo corre en merge/push a main
-    steps:
-      - name: Disparar deploy en Render (Entorno QA)
-        run: |
-          curl "${{ secrets.RENDER_DEPLOY_HOOK_QA }}"
-
-  deploy-prod:
-    needs: [test, deploy-qa] # Espera a que QA esté listo antes de pedir aprobación
-    runs-on: ubuntu-latest
-    environment: production # ESTO FRENA EL DEPLOY Y TE PIDE APROBACIÓN MANUAL
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     steps:
-      - name: Disparar deploy en Render (Entorno Prod)
-        run: |
-          curl "${{ secrets.RENDER_DEPLOY_HOOK_PRD }}"
+      - name: Disparar deploy en Render QA
+        run: curl "${{ secrets.RENDER_DEPLOY_HOOK_QA }}"
+
+  # Deploy manual a PRD (Requiere aprobación del Release Manager)
+  deploy-prod:
+    needs: deploy-qa
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Disparar deploy en Render PRD
+        run: curl "${{ secrets.RENDER_DEPLOY_HOOK_PRD }}"

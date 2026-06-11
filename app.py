@@ -33,8 +33,8 @@ with app.app_context():
 # Endpoint 1: Healthcheck (Requisito del TP)
 @app.route('/healthcheck', methods=['GET'])
 def healthcheck():
- #    return jsonify({"status": "ok", "message": "API funcionando correctamente"}), 200
-return jsonify({"status": "ok", "message": "API funcionando correctamente 10/06"}), 200
+    return jsonify({"status": "ok", "message": "API funcionando correctamente - Prueba CI/CD 11/06"}), 200
+
 # Endpoint 2: Obtener todos los usuarios
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -90,5 +90,44 @@ def delete_user(id):
     db.session.commit()
     return jsonify({"message": "Usuario eliminado correctamente"}), 200
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG_MODE) # nosec
+# ==========================================
+# COMPLETANDO EL ABM DE USUARIOS (Requisito del TP)
+# ==========================================
+
+# 1. Obtener un único usuario por ID (Lectura)
+@app.route('/users/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    user = User.query.get_or_404(user_id)
+    return jsonify(user.to_dict()), 200
+
+# 2. Modificar un usuario existente (Update - M)
+@app.route('/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "No se proporcionaron datos para actualizar"}), 400
+        
+    # Validar si intenta cambiar el email por uno que ya existe
+    if 'email' in data and data['email'] != user.email:
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({"error": "El email ya está registrado por otro usuario"}), 400
+            
+    # Actualizar campos si vienen en el JSON
+    user.nombre = data.get('nombre', user.nombre)
+    user.email = data.get('email', user.email)
+    
+    db.session.commit()
+    return jsonify(user.to_dict()), 200
+
+# 3. Eliminar un usuario (Delete - B)
+@app.route('/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message": f"Usuario {user_id} eliminado correctamente"}), 200
+    
+if __name__ == '__main__':    
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG_MODE)  # nosec B104
